@@ -1,0 +1,140 @@
+- name: Configure Ubuntu VMs
+  hosts: all
+  become: true
+
+  # Tasks section contains individual configuration tasks
+  tasks:
+    # Task to update the apt package cache
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    # Task to install python3-psycopg2 package
+    - name: Install psycopg2 Python library
+      apt:
+        name: python3-psycopg2
+        state: present
+
+    # Task to install Docker dependencies
+    - name: Install Docker dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
+
+    # Task to add Docker's official GPG key
+    - name: Add Docker's official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    # Task to set up Docker's stable repository
+    - name: Set up Docker's stable repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    # Task to update apt package cache after adding Docker repository
+    - name: Update apt package cache after adding Docker repository
+      apt:
+        update_cache: yes
+
+    # Task to install Docker
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    # Task to install common packages required for various operations
+    - name: Install common packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - vim
+        - curl
+        - wget
+        - unzip
+        - git
+        - htop
+        - tree
+        - net-tools
+        - python3-pip
+        - jq
+        - nginx
+        - python3
+        - build-essential
+        - python3-venv
+        # Add more packages as needed
+
+    # Task to set the timezone to Romania
+    - name: Set timezone to Romania
+      timezone:
+        name: Europe/Bucharest
+
+    # Task to ensure NTP (Network Time Protocol) is installed and running for time synchronization
+    - name: Ensure NTP is installed and running
+      apt:
+        name: ntp
+        state: present
+      notify: restart ntp
+
+    # Task to create a techuser with sudo privileges
+    - name: Create techuser
+      user:
+        name: techuser
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        state: present
+
+    # Task to install PostgreSQL
+    - name: Install PostgreSQL
+      apt:
+        name: postgresql
+        state: present
+
+    # Task to create directory for PostgreSQL data
+    - name: Create directory for PostgreSQL data
+      file:
+        path: /var/lib/postgresql/data
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: '0700'
+
+    # Task to create Linux user 'postgres'
+    - name: Create Linux user 'postgres'
+      user:
+        name: postgres
+        state: present
+        system: yes
+
+    # Task to restart PostgreSQL service
+    - name: Restart PostgreSQL service
+      service:
+        name: postgresql
+        state: restarted
+
+    # Task to ensure PostgreSQL service is started and enabled
+    - name: Ensure PostgreSQL service is started and enabled
+      service:
+        name: postgresql
+        state: started
+        enabled: yes
+
+  # Handlers section contains tasks to handle service restarts
+  handlers:
+    # Handler to restart NTP service
+    - name: restart ntp
+      service:
+        name: ntp
+        state: restarted
+
+    # Add more handlers as needed
+
